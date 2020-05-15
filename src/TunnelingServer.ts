@@ -10,15 +10,17 @@ const debug = Debug('playwright-on-gcloud:Server')
 export function serveRequest(options: {
   publishTopic: string
   subscriptionName: string
+  log?: (format: string, ...args: any[]) => void
   launchTCPService: () => Promise<{
     port: number
     endpoint: string
     close: () => Promise<void>
   }>
 }) {
+  const log = options.log || debug
   const bin = new DisposeBin()
   const sessionEndPromise = (async () => {
-    debug(
+    log(
       'Received request with publishTopic=%s, subscriptionName=%s',
       options.publishTopic,
       options.subscriptionName,
@@ -27,14 +29,19 @@ export function serveRequest(options: {
       options.publishTopic,
       options.subscriptionName,
     )
-    debug('Launching chromium server')
+    log('Launching service')
     const service = await options.launchTCPService()
+    log(
+      'Service launched on port "%s" endpoint "%s"',
+      service.port,
+      service.endpoint,
+    )
     bin.add('Service server', () => service.close())
 
     // Server-client
     await new Promise((resolve, reject) => {
       const session = MuxDemux((connection) => {
-        debug('Connection created')
+        log('Connection created')
         var tcp = net.connect(service.port, 'localhost')
         connection.pipe(tcp).pipe(connection)
         bin.add('TCP connection stream', async () => tcp.end())

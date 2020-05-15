@@ -1,6 +1,8 @@
 // @ts-check
 const { serveRequest, establishTunnel } = require('..')
 const { chromium } = require('playwright-core')
+const fetch = require('node-fetch').default
+const jsonwebtoken = require('jsonwebtoken')
 
 ;(async () => {
   console.log('==> Starting tunnel')
@@ -10,25 +12,40 @@ const { chromium } = require('playwright-core')
         publishTopic,
         subscriptionName,
       })
-      const { sessionEndPromise } = serveRequest({
-        publishTopic,
-        subscriptionName,
-        async launchTCPService() {
-          console.log('==> Launching Playwright')
-          const { chromium } = require('playwright')
-          const browserServer = await chromium.launchServer()
-          const wsEndpoint = browserServer.wsEndpoint()
-          const [, port, endpoint] = wsEndpoint.match(/:(\d+)(\/.*$)/)
-          return {
-            port: +port,
-            endpoint: endpoint,
-            close: () => browserServer.close(),
-          }
+      const response = fetch(process.env.PLAYWRIGHT_SERVER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jsonwebtoken.sign(
+            {},
+            process.env.JWT_SECRET,
+          )}`,
         },
-      })
-      sessionEndPromise.then(() => {
-        console.log('==> Playwright session ended')
-      })
+        body: JSON.stringify({
+          query: `
+            mutation Run($publishTopic: String!, $subscriptionName: String!) {
+              runPlaywright(publishTopic: $publishTopic, subscriptionName: $subscriptionName) {
+                ok
+                message
+              }
+            }
+          `,
+          variables: {
+            publishTopic,
+            subscriptionName,
+          },
+        }),
+      }).then((r) => r.json())
+      response
+        .then((v) => {
+          console.log('==> Playwright session ended', v)
+        })
+        .catch((e) => {
+          console.log('==> Playwright session error', e)
+        })
+        .finally(() => {
+          tunnel.dispose()
+        })
     },
   })
   process.once('SIGINT', () => tunnel.dispose())

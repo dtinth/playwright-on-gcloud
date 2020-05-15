@@ -35,7 +35,7 @@ export class DisposeBin {
     }
   }
   async dispose() {
-    this.guard()
+    if (!this.things) return
     const things = this.things
     this.things = null
     await Promise.all(

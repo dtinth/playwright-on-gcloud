@@ -13,9 +13,10 @@ WORKDIR /app
 COPY yarn.lock package.json ./
 RUN env YARN_SKIP_PREPARE=1 yarn
 COPY tsconfig.json ./
-COPY src/ src/
-RUN yarn prepare
 COPY server/package.json server/yarn.lock server/
 RUN cd server && yarn
 COPY server/src/ server/src/
+COPY src/ src/
+RUN yarn prepare
 USER node
+CMD node server/src/main.js
