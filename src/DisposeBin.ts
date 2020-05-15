@@ -14,6 +14,7 @@ export class DisposeBin {
     this.guard()
     debug('Registering %s', name)
     const result = await create()
+    debug('Registered %s', name)
     this.add(name, () => dispose(result))
     return result
   }

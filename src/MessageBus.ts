@@ -52,50 +52,74 @@ MessageBusGoogleCloudPubSub.prepareChannel = () => {
   const promise = (async () => {
     debug('Topic name prefix: %s', topicNamePrefix)
 
-    const [incomingTopic] = await bin.register(
+    const incomingTopicPromise = bin.register(
       'Incoming topic',
       async () => pubsub.createTopic(`${topicNamePrefix}-incoming`),
       async ([x]) => {
         await x.delete()
       },
     )
-    debug('Created topic "%s"', incomingTopic.name)
-
-    incomingTopic.setMetadata({
-      labels: { expires: String(Date.now() + 86400e3) },
+    incomingTopicPromise.then(([incomingTopic]) => {
+      debug('Created topic "%s"', incomingTopic.name)
+      incomingTopic.setMetadata({
+        labels: { expires: String(Date.now() + 86400e3) },
+      })
     })
 
-    const [incomingSubscription] = await bin.register(
-      'Incoming subscription',
-      async () =>
-        pubsub.createSubscription(incomingTopic, `${topicNamePrefix}-incoming`),
-      async ([x]) => {
-        await x.delete()
-      },
+    const incomingSubscriptionPromise = incomingTopicPromise.then(
+      ([incomingTopic]) =>
+        bin.register(
+          'Incoming subscription',
+          async () =>
+            pubsub.createSubscription(
+              incomingTopic,
+              `${topicNamePrefix}-incoming`,
+            ),
+          async ([x]) => {
+            await x.delete()
+          },
+        ),
     )
-    debug('Created subscription "%s"', incomingSubscription.name)
+    incomingSubscriptionPromise.then(([incomingSubscription]) => {
+      debug('Created subscription "%s"', incomingSubscription.name)
+    })
 
-    const [outgoingTopic] = await bin.register(
+    const outgoingTopicPromise = bin.register(
       'Outgoing topic',
       async () => pubsub.createTopic(`${topicNamePrefix}-outgoing`),
       async ([x]) => {
         await x.delete()
       },
     )
-    debug('Created topic "%s"', outgoingTopic.name)
-    outgoingTopic.setMetadata({
-      labels: { expires: String(Date.now() + 86400e3) },
+    outgoingTopicPromise.then(([outgoingTopic]) => {
+      debug('Created topic "%s"', outgoingTopic.name)
+      outgoingTopic.setMetadata({
+        labels: { expires: String(Date.now() + 86400e3) },
+      })
     })
 
-    const [outgoingSubscription] = await bin.register(
-      'Outgoing subscription',
-      async () =>
-        pubsub.createSubscription(outgoingTopic, `${topicNamePrefix}-outgoing`),
-      async ([x]) => {
-        await x.delete()
-      },
+    const outgoingSubscriptionPromise = outgoingTopicPromise.then(
+      ([outgoingTopic]) =>
+        bin.register(
+          'Outgoing subscription',
+          async () =>
+            pubsub.createSubscription(
+              outgoingTopic,
+              `${topicNamePrefix}-outgoing`,
+            ),
+          async ([x]) => {
+            await x.delete()
+          },
+        ),
     )
-    debug('Created subscription "%s"', outgoingSubscription.name)
+    outgoingSubscriptionPromise.then(([outgoingSubscription]) => {
+      debug('Created subscription "%s"', outgoingSubscription.name)
+    })
+
+    const [incomingTopic] = await incomingTopicPromise
+    const [incomingSubscription] = await incomingSubscriptionPromise
+    const [outgoingTopic] = await outgoingTopicPromise
+    const [outgoingSubscription] = await outgoingSubscriptionPromise
 
     return {
       incomingTopic: incomingTopic.name.split('/').pop()!,

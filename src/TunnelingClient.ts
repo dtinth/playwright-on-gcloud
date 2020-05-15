@@ -4,11 +4,15 @@ import { MessageBusGoogleCloudPubSub } from './MessageBus'
 import MuxDemux from 'mux-demux/msgpack'
 import msgpack from 'msgpack-js'
 import net from 'net'
-import jsonwebtoken from 'jsonwebtoken'
 
 const debug = Debug('playwright-on-gcloud:Client')
 
-export function establishTunnel(options: { jwtSecret: string }) {
+export function establishTunnel(options: {
+  spawnServer: (options: {
+    publishTopic: string
+    subscriptionName: string
+  }) => Promise<void>
+}) {
   const bin = new DisposeBin()
   const channel = MessageBusGoogleCloudPubSub.prepareChannel()
   bin.add('Pub-sub channel', () => channel.dispose())
@@ -47,17 +51,10 @@ export function establishTunnel(options: { jwtSecret: string }) {
     bin.add('Abort connection with server', async () =>
       write({ command: 'close' }),
     )
-
-    const token = jsonwebtoken.sign(
-      {
-        publishTopic: incomingTopic,
-        subscriptionName: outgoingSubscription,
-      },
-      options.jwtSecret,
-    )
-    console.log(
-      `curl -X POST http://localhost:9991/sessions -H 'Authorization: Bearer ${token}'`,
-    )
+    await options.spawnServer({
+      publishTopic: incomingTopic,
+      subscriptionName: outgoingSubscription,
+    })
     const { endpoint } = await ready
 
     debug('Server is ready')

@@ -7,38 +7,28 @@ import net from 'net'
 
 const debug = Debug('playwright-on-gcloud:Server')
 
-export function serveRequest(
-  publishTopic: string,
-  subscriptionName: string,
+export function serveRequest(options: {
+  publishTopic: string
+  subscriptionName: string
   launchTCPService: () => Promise<{
     port: number
     endpoint: string
     close: () => Promise<void>
-  }> = async () => {
-    const { chromium } = require('playwright')
-    const browserServer = await chromium.launchServer()
-    const wsEndpoint = browserServer.wsEndpoint()
-    const [, port, endpoint] = wsEndpoint.match(/:(\d+)(\/.*$)/)
-    return {
-      port: +port,
-      endpoint: endpoint,
-      close: () => browserServer.close(),
-    }
-  },
-) {
+  }>
+}) {
   const bin = new DisposeBin()
-  const promise = (async () => {
+  const sessionEndPromise = (async () => {
     debug(
       'Received request with publishTopic=%s, subscriptionName=%s',
-      publishTopic,
-      subscriptionName,
+      options.publishTopic,
+      options.subscriptionName,
     )
     const { listen, reply } = MessageBusGoogleCloudPubSub(
-      publishTopic,
-      subscriptionName,
+      options.publishTopic,
+      options.subscriptionName,
     )
     debug('Launching chromium server')
-    const service = await launchTCPService()
+    const service = await options.launchTCPService()
     bin.add('Service server', () => service.close())
 
     // Server-client
@@ -69,8 +59,9 @@ export function serveRequest(
       write({ command: 'ready', endpoint: service.endpoint })
     })
   })()
+  sessionEndPromise.then(() => bin.dispose())
   return {
-    promise,
+    sessionEndPromise,
     dispose: () => bin.dispose(),
   }
 }

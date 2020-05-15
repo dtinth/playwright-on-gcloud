@@ -24,7 +24,6 @@
     "bson-objectid": "^1.3.0",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
-    "jsonwebtoken": "^8.5.1",
     "msgpack-js": "^0.3.0",
     "mux-demux": "^3.7.9",
     "ws": "^7.3.0"
