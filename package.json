@@ -15,7 +15,7 @@
   "typings": "./lib/index.d.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "rm -rf lib && tsc"
+    "prepare": "test -n \"$YARN_SKIP_PREPARE\" || (rm -rf lib && tsc)"
   },
   "author": "Thai Pangsakulyanont <dtinth@spacet.me> (http://dt.in.th/)",
   "license": "MIT",
