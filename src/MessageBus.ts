@@ -45,7 +45,12 @@ export function MessageBusGoogleCloudPubSub(
   }
 }
 
-MessageBusGoogleCloudPubSub.prepareChannel = () => {
+MessageBusGoogleCloudPubSub.prepareChannel = (
+  options: {
+    log?: (format: string, ...args: any[]) => void
+  } = {},
+) => {
+  const log = options.log || debug
   const bin = new DisposeBin()
   const topicNamePrefix = `playwright-${ObjectID.generate()}`
   const pubsub = new PubSub()
@@ -60,7 +65,7 @@ MessageBusGoogleCloudPubSub.prepareChannel = () => {
       },
     )
     incomingTopicPromise.then(([incomingTopic]) => {
-      debug('Created topic "%s"', incomingTopic.name)
+      log('Created topic "%s"', incomingTopic.name)
       incomingTopic.setMetadata({
         labels: { expires: String(Date.now() + 86400e3) },
       })
@@ -81,7 +86,7 @@ MessageBusGoogleCloudPubSub.prepareChannel = () => {
         ),
     )
     incomingSubscriptionPromise.then(([incomingSubscription]) => {
-      debug('Created subscription "%s"', incomingSubscription.name)
+      log('Created subscription "%s"', incomingSubscription.name)
     })
 
     const outgoingTopicPromise = bin.register(
@@ -92,7 +97,7 @@ MessageBusGoogleCloudPubSub.prepareChannel = () => {
       },
     )
     outgoingTopicPromise.then(([outgoingTopic]) => {
-      debug('Created topic "%s"', outgoingTopic.name)
+      log('Created topic "%s"', outgoingTopic.name)
       outgoingTopic.setMetadata({
         labels: { expires: String(Date.now() + 86400e3) },
       })
@@ -113,7 +118,7 @@ MessageBusGoogleCloudPubSub.prepareChannel = () => {
         ),
     )
     outgoingSubscriptionPromise.then(([outgoingSubscription]) => {
-      debug('Created subscription "%s"', outgoingSubscription.name)
+      log('Created subscription "%s"', outgoingSubscription.name)
     })
 
     const [incomingTopic] = await incomingTopicPromise

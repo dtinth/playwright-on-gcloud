@@ -8,13 +8,15 @@ import net from 'net'
 const debug = Debug('playwright-on-gcloud:Client')
 
 export function establishTunnel(options: {
+  log?: (format: string, ...args: any[]) => void
   spawnServer: (options: {
     publishTopic: string
     subscriptionName: string
   }) => Promise<void>
 }) {
+  const log = options.log || debug
   const bin = new DisposeBin()
-  const channel = MessageBusGoogleCloudPubSub.prepareChannel()
+  const channel = MessageBusGoogleCloudPubSub.prepareChannel({ log })
   bin.add('Pub-sub channel', () => channel.dispose())
 
   const promise = (async () => {
@@ -24,6 +26,7 @@ export function establishTunnel(options: {
       outgoingTopic,
       outgoingSubscription,
     } = await channel.promise
+    log('Messenging channel prepared')
 
     const { listen, reply } = MessageBusGoogleCloudPubSub(
       outgoingTopic,
@@ -55,9 +58,11 @@ export function establishTunnel(options: {
       publishTopic: incomingTopic,
       subscriptionName: outgoingSubscription,
     })
-    const { endpoint } = await ready
+    log('Server request spawned')
 
-    debug('Server is ready')
+    const { endpoint } = await ready
+    log('Server is ready')
+
     const server = net.createServer((connection) => {
       const stream = session.createStream(null)
       connection.pipe(stream).pipe(connection)
@@ -71,7 +76,7 @@ export function establishTunnel(options: {
         server.close()
       },
     )
-    debug('Tunnel is ready')
+    log('Tunnel is ready')
     const port = (server.address() as any).port
     return { endpoint, port }
   })()

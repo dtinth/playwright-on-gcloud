@@ -1,12 +1,17 @@
 // @ts-check
-const { serveRequest, establishTunnel } = require('..')
+const { establishTunnel } = require('..')
 const { chromium } = require('playwright-core')
 const fetch = require('node-fetch').default
 const jsonwebtoken = require('jsonwebtoken')
 
+const log = (format, ...args) => {
+  console.log(`[${new Date().toJSON()}] ${format}`, ...args)
+}
+
 ;(async () => {
   console.log('==> Starting tunnel')
   const tunnel = establishTunnel({
+    log,
     async spawnServer({ publishTopic, subscriptionName }) {
       console.log('==> Tunnel parameters received', {
         publishTopic,
