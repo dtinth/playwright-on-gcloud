@@ -9,11 +9,11 @@ const log = (format, ...args) => {
 }
 
 ;(async () => {
-  console.log('==> Starting tunnel')
+  log('==> Starting tunnel')
   const tunnel = establishTunnel({
     log,
     async spawnServer({ publishTopic, subscriptionName }) {
-      console.log('==> Tunnel parameters received', {
+      log('==> Tunnel parameters received', {
         publishTopic,
         subscriptionName,
       })
@@ -43,10 +43,10 @@ const log = (format, ...args) => {
       }).then((r) => r.json())
       response
         .then((v) => {
-          console.log('==> Playwright session ended', v)
+          log('==> Playwright session ended', v)
         })
         .catch((e) => {
-          console.log('==> Playwright session error', e)
+          log('==> Playwright session error', e)
         })
         .finally(() => {
           tunnel.dispose()
@@ -56,27 +56,27 @@ const log = (format, ...args) => {
   process.once('SIGINT', () => tunnel.dispose())
   try {
     const { endpoint, port } = await tunnel.promise
-    console.log('==> Tunnel ready', {
+    log('==> Tunnel ready', {
       endpoint,
       port,
     })
 
     const wsEndpoint = `ws://localhost:${port}${endpoint}`
-    console.log('==> Connect to ' + wsEndpoint)
+    log('==> Connect to ' + wsEndpoint)
     const browser = await chromium.connect({
       wsEndpoint: wsEndpoint,
     })
     try {
-      console.log('==> Chromium connected')
+      log('==> Chromium connected')
       const context = await browser.newContext({})
-      console.log('==> Context created')
+      log('==> Context created')
       const page = await context.newPage()
-      console.log('==> Page created')
+      log('==> Page created')
       await page.goto('https://unsplash.com/')
-      console.log('==> Navigated')
-      console.log(await page.title())
+      log('==> Navigated')
+      log(await page.title())
       const screenshot = await page.screenshot()
-      console.log('==> Got screenshot of size %s', screenshot.length)
+      log('==> Got screenshot of size %s', screenshot.length)
     } finally {
       await browser.close().catch((e) => {
         console.error('Cannot close browser', e)
