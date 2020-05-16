@@ -25,3 +25,32 @@ An experiment to expose Playwright as a service on Google Cloud.
 ## Notes
 
 - This is still an unfinished prototype. Expect to see 💩 code.
+
+## Set up
+
+**Building the image on the cloud:**
+
+```
+gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/playwright-on-gcloud
+```
+
+**Deploying the image to the cloud:**
+
+```
+gcloud run deploy playwright-on-gcloud \
+  --image gcr.io/$GOOGLE_CLOUD_PROJECT/playwright-on-gcloud \
+  --platform managed \
+  --region asia-northeast1 \
+  --allow-unauthenticated \
+  --cpu=2 \
+  --memory=2Gi \
+  --concurrency=1
+```
+
+**Environment variables:**
+
+| Name                             | Server (Cloud Run)      | Client (Running Client)     |
+| -------------------------------- | ----------------------- | --------------------------- |
+| `GOOGLE_APPLICATION_CREDENTIALS` | (no need)               | Point to Service Account    |
+| `JWT_SECRET`                     | JWT verification secret | JWT signing secret          |
+| `PLAYWRIGHT_SERVER_URL`          | (no need)               | Point to Cloud Run endpoint |
