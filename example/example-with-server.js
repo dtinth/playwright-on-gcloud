@@ -72,7 +72,7 @@ const log = (format, ...args) => {
       console.log('==> Context created')
       const page = await context.newPage()
       console.log('==> Page created')
-      await page.goto('http://example.com')
+      await page.goto('https://unsplash.com/')
       console.log('==> Navigated')
       console.log(await page.title())
       const screenshot = await page.screenshot()
