@@ -25,6 +25,7 @@
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
     "msgpack-js": "^0.3.0",
+    "msgpack-lite": "^0.1.26",
     "mux-demux": "^3.7.9",
     "ws": "^7.3.0"
   }
