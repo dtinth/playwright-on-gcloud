@@ -12,6 +12,25 @@ export function MessageBusGoogleCloudPubSub(
   debug('GoogleCloudPubSub(%s, %s)', publishTopic, subscriptionName)
   const pubSubClient = new PubSub()
   const topic = pubSubClient.topic(publishTopic)
+  const makeStatsContainer = () => ({
+    messageCount: 0,
+    totalSize: 0,
+    maxSize: 0,
+  })
+  const stats = {
+    sent: makeStatsContainer(),
+    received: makeStatsContainer(),
+  }
+  const updateStats = (
+    container: ReturnType<typeof makeStatsContainer>,
+    buffer: Buffer,
+  ) => {
+    // https://cloud.google.com/pubsub/pricing
+    const billedSize = Math.max(1000, buffer.length + 40)
+    container.messageCount += 1
+    container.totalSize += billedSize
+    container.maxSize = Math.max(billedSize, container.maxSize)
+  }
   let nextId = 1
 
   return {
@@ -25,6 +44,7 @@ export function MessageBusGoogleCloudPubSub(
       }) => {
         message.ack()
         receive(+message.attributes.sequenceId, message.data)
+        updateStats(stats.received, message.data)
       }
       subscription.on('message', messageHandler)
       subscription.on('error', (e) => {
@@ -37,10 +57,18 @@ export function MessageBusGoogleCloudPubSub(
         })
       }
     },
-    reply(buffer: Buffer) {
-      topic.publish(buffer, { sequenceId: String(nextId++) }).catch((e) => {
-        console.error('Cannot publish', e)
-      })
+    reply(bufferToSend: Buffer) {
+      const maxSize = 8e6
+      for (let i = 0; i < bufferToSend.length; i += maxSize) {
+        const buffer = bufferToSend.slice(i, i + maxSize)
+        updateStats(stats.sent, buffer)
+        topic.publish(buffer, { sequenceId: String(nextId++) }).catch((e) => {
+          console.error('Cannot publish', e)
+        })
+      }
+    },
+    getStats() {
+      return stats
     },
   }
 }

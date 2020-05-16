@@ -54,3 +54,16 @@ gcloud run deploy playwright-on-gcloud \
 | `GOOGLE_APPLICATION_CREDENTIALS` | (no need)               | Point to Service Account    |
 | `JWT_SECRET`                     | JWT verification secret | JWT signing secret          |
 | `PLAYWRIGHT_SERVER_URL`          | (no need)               | Point to Cloud Run endpoint |
+
+## Running
+
+```
+# .env
+GOOGLE_APPLICATION_CREDENTIALS=<path/to/service-account>.json
+JWT_SECRET=<secret>
+PLAYWRIGHT_SERVER_URL=https://<your-domain>.a.run.app/
+```
+
+```
+node -r dotenv/config example/example-with-server.js
+```

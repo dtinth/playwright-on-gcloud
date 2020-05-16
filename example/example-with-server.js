@@ -75,6 +75,8 @@ const log = (format, ...args) => {
       await page.goto('http://example.com')
       console.log('==> Navigated')
       console.log(await page.title())
+      const screenshot = await page.screenshot()
+      console.log('==> Got screenshot of size %s', screenshot.length)
     } finally {
       await browser.close().catch((e) => {
         console.error('Cannot close browser', e)

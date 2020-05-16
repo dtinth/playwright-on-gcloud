@@ -28,10 +28,13 @@ export function establishTunnel(options: {
     } = await channel.promise
     log('Messenging channel prepared')
 
-    const { listen, reply } = MessageBusGoogleCloudPubSub(
+    const { listen, reply, getStats } = MessageBusGoogleCloudPubSub(
       outgoingTopic,
       incomingSubscription,
     )
+    bin.add('Stats tracking', async () => {
+      log('Google Cloud Pub/Sub Stats', getStats())
+    })
     const write = (x: any) => {
       debug('>>', x)
       reply(msgpack.encode(x))
