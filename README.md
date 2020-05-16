@@ -28,6 +28,12 @@ An experiment to expose Playwright as a service on Google Cloud.
 
 ## Set up
 
+**Make builds fast:**
+
+```
+gcloud config set builds/use_kaniko True
+```
+
 **Building the image on the cloud:**
 
 ```
