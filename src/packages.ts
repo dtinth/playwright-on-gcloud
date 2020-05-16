@@ -17,3 +17,15 @@ declare module 'msgpack-js' {
   }
   export = msgpack
 }
+
+declare module 'msgpack-lite' {
+  import { Transform } from 'stream'
+
+  namespace msgpackLite {
+    const createDecodeStream: () => Transform
+    const createEncodeStream: () => Transform & { encoder: { flush(): void } }
+  }
+  export = msgpackLite
+}
+
+declare module 'bufferedstream'

@@ -2,6 +2,8 @@ import Debug from 'debug'
 import { PubSub } from '@google-cloud/pubsub'
 import { DisposeBin } from './DisposeBin'
 import ObjectID from 'bson-objectid'
+import msgpackLite from 'msgpack-lite'
+import BufferList from 'bl'
 
 const debug = Debug('playwright-on-gcloud:MessageBus')
 
@@ -21,6 +23,31 @@ export function MessageBusGoogleCloudPubSub(
     sent: makeStatsContainer(),
     received: makeStatsContainer(),
   }
+  const encoder = msgpackLite.createEncodeStream()
+  const publishQueue = new BufferList()
+  let gonnaFlush = false
+  let gonnaPublish = false
+  encoder.on('data', (buffer) => {
+    publishQueue.append(buffer)
+    if (!gonnaPublish) {
+      gonnaPublish = true
+      setTimeout(() => {
+        gonnaPublish = false
+        const bufferSize = 8e6
+        while (publishQueue.length > 0) {
+          const toPublish = publishQueue.slice(0, bufferSize)
+          updateStats(stats.sent, toPublish)
+          debug('Publishing %s bytes to topic %s', toPublish.length, topic.name)
+          topic
+            .publish(toPublish, { sequenceId: String(nextId++) })
+            .catch((e) => {
+              console.error('Cannot publish', e)
+            })
+          publishQueue.consume(bufferSize)
+        }
+      })
+    }
+  })
   const updateStats = (
     container: ReturnType<typeof makeStatsContainer>,
     buffer: Buffer,
@@ -36,7 +63,9 @@ export function MessageBusGoogleCloudPubSub(
   return {
     listen(f: (buffer: Buffer) => void): () => void {
       const subscription = pubSubClient.subscription(subscriptionName)
-      const receive = chaosToOrder((x: Buffer) => f(x))
+      const decoder = msgpackLite.createDecodeStream()
+      decoder.on('data', (x: Buffer) => f(x))
+      const receive = chaosToOrder((x: Buffer) => decoder.write(x))
       const messageHandler = (message: {
         ack: () => void
         attributes: { sequenceId: string }
@@ -58,12 +87,12 @@ export function MessageBusGoogleCloudPubSub(
       }
     },
     reply(bufferToSend: Buffer) {
-      const maxSize = 8e6
-      for (let i = 0; i < bufferToSend.length; i += maxSize) {
-        const buffer = bufferToSend.slice(i, i + maxSize)
-        updateStats(stats.sent, buffer)
-        topic.publish(buffer, { sequenceId: String(nextId++) }).catch((e) => {
-          console.error('Cannot publish', e)
+      encoder.write(bufferToSend)
+      if (!gonnaFlush) {
+        gonnaFlush = true
+        setTimeout(() => {
+          gonnaFlush = false
+          encoder.encoder.flush()
         })
       }
     },
