@@ -5,7 +5,7 @@
   "author": "Thai Pangsakulyanont",
   "license": "MIT",
   "dependencies": {
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "node-fetch": "^2.6.0",
     "playwright": "^1.0.2"
   }
